@@ -4,10 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { RouterModule } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-login',
@@ -18,8 +19,9 @@ import { RouterModule } from '@angular/router';
     MatInputModule,
     MatButtonModule,
     MatCardModule,
-    MatFormFieldModule,
-    RouterModule  // Add this
+    RouterModule,
+    MatProgressSpinnerModule,
+    RouterModule
   ],
   template: `
     <div class="auth-container">
@@ -28,7 +30,7 @@ import { RouterModule } from '@angular/router';
           <mat-card-title>Login</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <form class="auth-form" (ngSubmit)="onSubmit()">
+          <form class="auth-form" (ngSubmit)="onSubmit()" [class.loading]="isLoading">
             <mat-form-field appearance="outline">
               <mat-label>Username</mat-label>
               <input matInput [(ngModel)]="username" name="username" required>
@@ -39,37 +41,61 @@ import { RouterModule } from '@angular/router';
               <input matInput [(ngModel)]="password" name="password" type="password" required>
             </mat-form-field>
 
+            <div class="auth-error" *ngIf="error">
+              {{ error }}
+            </div>
             <div class="auth-actions">
-              <button mat-stroked-button type="button" routerLink="/register">
+              <button mat-stroked-button type="button" routerLink="/register" [disabled]="isLoading">
                 Create Account
               </button>
-              <button mat-raised-button color="primary" type="submit">
-                Login
+              <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+                <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+                <span *ngIf="!isLoading">Login</span>
               </button>
             </div>
           </form>
         </mat-card-content>
       </mat-card>
     </div>
-  `
+  `,
+  styles: [`
+    .auth-error {
+      color: #f44336;
+      margin: 8px 0;
+      text-align: center;
+    }
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+  `]
 })
 export class LoginComponent {
   username = '';
   password = '';
+  isLoading = false;
+  error = '';
 
   constructor(
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly snackBar: MatSnackBar
   ) {}
 
   onSubmit() {
+    if (this.isLoading) return;
+    
+    this.isLoading = true;
+    this.error = '';
+
     this.authService.login({ username: this.username, password: this.password })
       .subscribe({
         next: () => {
           this.router.navigate(['/landing']);
         },
         error: (error) => {
-          console.error('Login failed:', error);
+          this.isLoading = false;
+          this.error = error.error.message || 'Login failed. Please try again.';
         }
       });
   }

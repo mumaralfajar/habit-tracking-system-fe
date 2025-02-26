@@ -1,13 +1,34 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { Router } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatIconModule } from '@angular/material/icon';
 import { trigger, transition, style, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, MatCardModule],
+  imports: [
+    CommonModule,
+    MatCardModule,
+    MatButtonModule,
+    MatToolbarModule,
+    MatIconModule
+  ],
   template: `
+    <mat-toolbar color="primary">
+      <span>Habit Tracker</span>
+      <span class="toolbar-spacer"></span>
+      <span class="username-text">{{username}}</span>
+      <button mat-icon-button (click)="logout()">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </mat-toolbar>
+    
     <div class="landing-container">
       <mat-card class="welcome-card" [@fadeIn]>
         <mat-card-header>
@@ -22,6 +43,13 @@ import { trigger, transition, style, animate } from '@angular/animations';
     </div>
   `,
   styles: [`
+    .toolbar-spacer {
+      flex: 1 1 auto;
+    }
+    .username-text {
+      margin-right: 16px;
+      font-size: 14px;
+    }
     .landing-container {
       height: 100vh;
       display: flex;
@@ -55,4 +83,29 @@ import { trigger, transition, style, animate } from '@angular/animations';
     ])
   ]
 })
-export class LandingComponent {}
+export class LandingComponent {
+  username = localStorage.getItem('username') || '';
+
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private snackBar: MatSnackBar
+  ) {}
+
+  logout() {
+    this.authService.logout().subscribe({
+      next: () => {
+        this.router.navigate(['/login']);
+        this.snackBar.open('Logged out successfully', 'Close', {
+          duration: 3000
+        });
+      },
+      error: (error) => {
+        this.snackBar.open('Error logging out', 'Close', {
+          duration: 3000
+        });
+        console.error('Logout error:', error);
+      }
+    });
+  }
+}
