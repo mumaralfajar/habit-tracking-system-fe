@@ -9,6 +9,7 @@ import { AuthService } from '../services/auth.service';
 import { RouterModule } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -75,12 +76,19 @@ export class LoginComponent {
   password = '';
   isLoading = false;
   error = '';
+  returnUrl: string = '/landing';
 
   constructor(
     private readonly authService: AuthService,
     private readonly router: Router,
-    private readonly snackBar: MatSnackBar
-  ) {}
+    private readonly snackBar: MatSnackBar,
+    private route: ActivatedRoute
+  ) {
+    // Get return url from route parameters or default to '/landing'
+    this.route.queryParams.subscribe(params => {
+      this.returnUrl = params['returnUrl'] || '/landing';
+    });
+  }
 
   onSubmit() {
     if (this.isLoading) return;
@@ -91,11 +99,11 @@ export class LoginComponent {
     this.authService.login({ username: this.username, password: this.password })
       .subscribe({
         next: () => {
-          this.router.navigate(['/landing']);
+          this.router.navigateByUrl(this.returnUrl);
         },
         error: (error) => {
           this.isLoading = false;
-          this.error = error.error.message || 'Login failed. Please try again.';
+          this.error = error.error?.message || 'Login failed. Please try again.';
         }
       });
   }
